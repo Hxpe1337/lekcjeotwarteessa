@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <title>Konsola CMD</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: Consolas, monospace;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex-grow: 1;   
+            padding: 10px;
+        }
+        .header {
+            text-align: center;
+        }
+        .option {
+    margin: 5px;
+    cursor: pointer;
+    background: linear-gradient(to bottom right, rgb(238, 238, 66), rgb(163, 231, 75));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;}
+#additionalInfo p {
+    color: #0f0; /* Kolor tekstu */
+    font-family: Consolas, monospace; /* Rodzina czcionek */
+    /* Dodaj więcej stylów według potrzeb */
+}
+
+.selected::before {
+    content: "> ";
+    color: white; /* Ustaw kolor strzałki na biały */
+}
+        #colorPicker {
+            position: fixed;
+            left: 10px;
+            bottom: 10px;
+            margin: 5px;
+            border: none;
+            opacity: 0.8;
+            cursor: pointer;
+        }
+        #log {
+            color: #0f0;
+            padding: 10px;
+            margin-top: 5px;
+            max-height: 100px;
+            overflow: hidden;
+        }
+        .option:hover {
+    background-color: #222; /* Subtelny efekt hover */
+}
+
+.backOption {
+    color: #f00; /* Czerwony kolor dla opcji "Powrót" */
+}
+
+.option {
+    display: block; /* Opcje jako bloki dla lepszego zarządzania przestrzenią */
+    padding: 2px 5px; /* Dodanie paddingu dla opcji */
+}
+
+#additionalInfo p {
+    margin: 0 0 5px; /* Zmniejszenie marginesów dla lepszej czytelności */
+}
+.path {
+    color: rgba(255, 255, 255, 0.461);
+    font-size: 12px;
+}
+.ascii-logo {
+            font-family: Consolas, monospace;
+            text-align: center;
+            background: linear-gradient(to bottom right, purple, rgb(51, 66, 166));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+    justify-content: center;
+    width: 100%;
+        }
+        .ascii-logo pre {
+    text-align: left; /* Aligns the text to the left within the centered <pre> element */
+}
+#gameContainer {
+        display: none; /* Hidden by default */
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        background: rgb(255, 255, 255);
+        padding: 1px; /* Optional: adds some padding around the canvas */
+    }
+    #pongCanvas {
+        
+        display: block; /* Ensures the canvas does not have extra space around it */
+        background-color: #000; /* Sets the canvas background to black */
+    }
+    #closeGame {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 20;
+    background-color: transparent;
+    color: rgb(0, 0, 0);
+    font-weight: 900;
+    border: none;
+    padding: 5px 10px;
+    font-size: 16px;
+
+}
+.paddle {
+    position: absolute;
+    background-color: #fff;
+    width: paddleWidthpx; /* Define width based on your paddleWidth variable */
+    height: paddleHeightpx; /* Define height based on your paddleHeight variable */
+    /* Additional styling as needed */
+}
+
+#player1 {
+    left: 0;
+    top: player1Ypx; /* Position based on player1Y variable */
+}
+
+#player2 {
+    right: 0;
+    top: player2Ypx; /* Position based on player2Y variable */
+}
+
+#closeGame:hover {
+    opacity: 1;
+}
+.Score {
+    color: black;
+    font-weight: 800;
+}
+    </style>
+</head>
+<body>
+<div class="content">
+
+    <div class="ascii-logo">
+        <pre>
+       ▄█    █▄    ▀████    ▐████▀ 
+      ███    ███     ███▌   ████▀  
+      ███    ███      ███  ▐███    
+     ▄███▄▄▄▄███▄▄    ▀███▄███▀    
+    ▀▀███▀▀▀▀███▀     ████▀██▄     
+      ███    ███     ▐███  ▀███    
+      ███    ███    ▄███     ███▄  
+      ███    █▀    ████       ███▄    
+              <i>Autor: Hype</i>
+
+<b>Napisane w 1 Godzine, na macbooku z 2014</b> </pre>
+    </div>
+    <div class="path" id="pseudoPath">~/</div> <!-- Tu dodajemy pseudo ścieżkę -->
+
+    <div id="options">
+    </div>
+
+
+
+</div>
+<div id="gameContainer" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+    <canvas id="pongCanvas" width="450" height="260"></canvas>
+    <div id="player1" class="paddle"></div>
+<div id="player2" class="paddle"></div>
+    <button id="closeGame" style="position: absolute; top: 0; right: 0; z-index: 20;">X</button>
+    <div id="scoreContainer" style="color: white; text-align: center;">
+        <span class="Score" id="player1Score">0</span> : <spa class="Score"id="player2Score">0</span>
+    </div>
+    
+</div>
+
+<div id="log">
+</div>
+<input type="color" id="colorPicker" value="#0f0">
+
+<script>
+    const mainOptions = ['Programs', 'Opcje', 'Credits'];
+    const subOptions = {
+        'Programs': ['Pong', 'Gra 2', 'Powrót'],
+        'Opcje': ['Opcja 1', 'Opcja 2', 'Zmień kolor', 'Powrót'],
+        'Credits': ['hype', 'Powrót'],
+        'Pong': ['Player Vs Player', 'Player Vs AI', 'Powrót']
+    };
+
+    let currentOptions = mainOptions;
+    let currentSelection = 0;
+    let logs = [];
+    document.addEventListener('click', function(event) {
+    const selectedOption = event.target.textContent.trim();
+    handleSelection(selectedOption);
+});
+
+    document.addEventListener('keydown', (event) => {
+        switch (event.key) {
+            case 'ArrowUp':
+            case 'W':
+            case 'w':
+                if (currentSelection > 0) currentSelection--;
+                break;
+            case 'ArrowDown':
+            case 'S':
+            case 's':
+                if (currentSelection < currentOptions.length - 1) currentSelection++;
+                break;
+            case 'Enter':
+                handleSelection();
+                break;
+        }
+        updateDisplay();
+    });
+
+    function handleSelection() {
+    const selectedOption = currentOptions[currentSelection];
+    if (Object.keys(subOptions).includes(selectedOption)) {
+        currentOptions = subOptions[selectedOption];
+        currentSelection = 0;
+        updatePseudoPath(selectedOption);
+        addLog(`Przejście do: ${selectedOption}`);
+    } else if (selectedOption === 'Player Vs Player') {
+        hideUI();
+        startGame(false);
+        addLog(`Rozpoczęcie gry: Player Vs Player`);
+    } else if (selectedOption === 'Player Vs AI') {
+        hideUI();
+        startGame(true);
+        addLog(`Rozpoczęcie gry: Player Vs AI`);
+    } else if (selectedOption === 'Powrót') {
+        let previousMenu = currentOptions === subOptions['Pong'] ? 'Programs' : 'Main Menu';
+        currentOptions = currentOptions === subOptions['Pong'] ? subOptions['Programs'] : mainOptions;
+        currentSelection = 0;
+        updatePseudoPath("");
+        addLog(`Powrót do: ${previousMenu}`);
+    }
+    updateDisplay();
+}
+
+function hideUI() {
+    
+    document.getElementById('options').style.display = 'none'; 
+    document.getElementById('gameContainer').style.display = 'block'; 
+}
+
+function showUI() {
+    document.getElementById('options').style.display = 'block'; 
+    document.getElementById('log').style.display = 'block'; 
+    document.getElementById('options').style.display = 'block'; 
+    document.getElementById('gameContainer').style.display = 'none'; 
+}
+
+
+function updatePseudoPath(section) {
+    document.getElementById('pseudoPath').textContent = section ? `~/${section}` : '~/';
+}
+
+
+updatePseudoPath("");
+
+function updateDisplay() {
+    let optionsHtml = '';
+    currentOptions.forEach((option, index) => {
+        
+        
+        const optionClass = option === 'Powrót' ? 'option backOption' : 'option';
+        optionsHtml += `<div class="${optionClass}${index === currentSelection ? ' selected' : ''}">${option}</div>`;
+    });
+    document.getElementById('options').innerHTML = optionsHtml;
+
+    
+    
+    
+    
+}
+
+
+
+    document.getElementById('colorPicker').addEventListener('change', (event) => {
+        document.body.style.color = event.target.value;
+        addLog(`Zmieniono kolor na: ${event.target.value}`);
+    });
+
+function addLog(message) {
+    const now = new Date();
+    const timeString = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+    const logMessage = `<span style="color: white;">${timeString}</span> <span style="color: #0f0;">${message}</span>`;
+    logs.push(logMessage);
+    if (logs.length > 5) { 
+        logs.shift();
+    }
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML = logs.join('<br>');
+}
+
+
+
+    updateDisplay();
+    document.addEventListener('DOMContentLoaded', function() {
+    fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => {
+            const ipDiv = document.createElement('p');
+            ipDiv.textContent = `Adres IP: ${data.ip}`;
+            document.getElementById('additionalInfo').appendChild(ipDiv);
+        })
+        .catch(error => {
+            console.error('Błąd przy pobieraniu adresu IP:', error);
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+    const infoDiv = document.getElementById('additionalInfo');
+
+    
+    const userAgentString = navigator.userAgent;
+    let browserName = "Nieznany";
+    if(userAgentString.includes("Chrome")) browserName = "Chrome";
+    else if(userAgentString.includes("Firefox")) browserName = "Firefox";
+    else if(userAgentString.includes("Safari")) browserName = "Safari";
+    
+
+    const osName = navigator.platform; 
+
+    
+    infoDiv.innerHTML = `
+        <p>Przeglądarka: ${browserName}</p>
+        <p>System operacyjny: ${osName}</p>
+        <!-- Dodaj więcej informacji, jakie chcesz wyświetlić -->
+    `;
+});
+
+
+</script>
+
+<script>
+const canvas = document.getElementById('pongCanvas');
+const ctx = canvas.getContext('2d');
+
+
+let paddleWidth = 20;
+let paddleHeight = 80;
+let ballSize = 10;
+let ballX = canvas.width / 2 - ballSize / 2;
+let ballY = canvas.height / 2 - ballSize / 2;
+let ballSpeedX = 5;
+let ballSpeedY = 5;
+let player1Y = (canvas.height - paddleHeight) / 2;
+let player2Y = (canvas.height - paddleHeight) / 2;
+let playerSpeed = 6;
+let player1Score = 0;
+let player2Score = 0;
+let isAIEnabled = false;
+let animationFrameId; 
+
+
+function startGame(isAI) {
+    
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
+    isAIEnabled = isAI;
+    canvas.style.display = 'block';
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+
+
+function gameLoop() {
+    moveBall();
+    if (isAIEnabled) {
+        moveAI();
+    }
+    drawEverything();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+
+
+function moveBall() {
+    
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+
+    
+    if (ballY <= 0 || ballY + ballSize >= canvas.height) {
+        ballSpeedY = -ballSpeedY;
+    }
+
+    
+    if (ballX <= paddleWidth && ballY + ballSize >= player1Y && ballY <= player1Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+        ballX = paddleWidth; 
+    } else if (ballX + ballSize >= canvas.width - paddleWidth && ballY + ballSize >= player2Y && ballY <= player2Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+        ballX = canvas.width - paddleWidth - ballSize; 
+    }
+
+    
+    if (ballX <= 0) {
+        player2Score++;
+        ballReset();
+    } else if (ballX + ballSize >= canvas.width) {
+        player1Score++;
+        ballReset();
+    }
+}
+
+
+function ballReset() {
+    ballX = canvas.width / 2 - ballSize / 2;
+    ballY = canvas.height / 2 - ballSize / 2;
+    ballSpeedX = -ballSpeedX; 
+}
+document.getElementById('closeGame').addEventListener('click', function() {
+    
+    document.getElementById('gameContainer').style.display = 'none'; 
+    showUI(); 
+
+    
+    player1Score = 0;
+    player2Score = 0;
+
+    
+    resetBallPosition();
+});
+
+function resetBallPosition() {
+    ballX = canvas.width / 2 - ballSize / 2;
+    ballY = canvas.height / 2 - ballSize / 2;
+}
+
+
+
+
+
+
+function moveAI() {
+    let paddle2YCenter = player2Y + (paddleHeight / 2);
+    if (paddle2YCenter < ballY - 35) {
+        player2Y += playerSpeed;
+    } else if (paddle2YCenter > ballY + 35) {
+        player2Y -= playerSpeed;
+    }
+}
+
+function drawEverything() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, player1Y, paddleWidth, paddleHeight); 
+    ctx.fillRect(canvas.width - paddleWidth, player2Y, paddleWidth, paddleHeight); 
+    ctx.fillRect(ballX, ballY, ballSize, ballSize); 
+
+    
+    ctx.font = 'bold 30px "Source Code Pro", monospace';
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'middle'; 
+    document.getElementById('player1Score').textContent = player1Score;
+    document.getElementById('player2Score').textContent = player2Score;
+
+
+}
+
+
+
+
+let keysPressed = {};
+
+
+document.addEventListener('keydown', (event) => {
+    keysPressed[event.key] = true;
+});
+
+document.addEventListener('keyup', (event) => {
+    keysPressed[event.key] = false;
+});
+
+
+setInterval(() => {
+    if (keysPressed['w']) {
+        player1Y -= playerSpeed;
+    }
+    if (keysPressed['s']) {
+        player1Y += playerSpeed;
+    }
+    if (!isAIEnabled) {
+        if (keysPressed['ArrowUp']) {
+            player2Y -= playerSpeed;
+        }
+        if (keysPressed['ArrowDown']) {
+            player2Y += playerSpeed;
+        }
+    }
+
+    
+    player1Y = Math.max(Math.min(player1Y, canvas.height - paddleHeight), 0);
+    if (!isAIEnabled) {
+        player2Y = Math.max(Math.min(player2Y, canvas.height - paddleHeight), 0);
+    }
+}, 1000 / 60); 
+
+
+
+
+
+
+</script>
+</body>
+</html>
